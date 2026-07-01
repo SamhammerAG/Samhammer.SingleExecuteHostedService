@@ -1,9 +1,9 @@
 ﻿using System;
-using System.Threading.Tasks;
 using System.Threading;
+using System.Threading.Tasks;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace Samhammer.SingleExecuteHostedService
 {
@@ -16,6 +16,8 @@ namespace Samhammer.SingleExecuteHostedService
         protected IHostApplicationLifetime ApplicationLifetime { get; }
 
         protected virtual TimeSpan ShutdownDelay => TimeSpan.FromSeconds(1);
+
+        protected virtual bool ThrowIfExecuteNotFinished => true;
 
         private bool IsFinished { get; set; }
 
@@ -76,9 +78,14 @@ namespace Samhammer.SingleExecuteHostedService
 
         private void ThrowIfNotFinished()
         {
-            if (!IsFinished)
+            if (IsFinished)
             {
-                Logger.LogWarning("SingleExecuteHostedService {HostedService} was not finished", typeof(T));
+                return;
+            }
+
+            Logger.LogWarning("SingleExecuteHostedService {HostedService} was not finished", typeof(T));
+            if (ThrowIfExecuteNotFinished)
+            {
                 throw new SingleExecuteNotFinishedException();
             }
         }
